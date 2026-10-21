@@ -30,6 +30,7 @@
 #include <nuttx/clock.h>
 #include <nuttx/net/netconfig.h>
 #include <nuttx/net/netdev.h>
+#include <nuttx/net/netdev_pollguard.h>
 #include <nuttx/net/net.h>
 
 #include "devif/devif.h"
@@ -253,7 +254,7 @@ static int devif_poll_can_connections(FAR struct net_driver_s *dev,
       if (dev == can_conn->dev)
         {
           /* Perform the packet TX poll */
-
+	  NET_DEBUGASSERT(dev->d_buf != NULL);
           can_poll(dev, can_conn);
 
           /* Call back into the driver */
@@ -649,6 +650,8 @@ int devif_poll(FAR struct net_driver_s *dev, devif_poll_callback_t callback)
 {
   int bstop = false;
 
+  netdev_poll_guard_enter(dev, "devif_poll");
+
   /* Traverse all of the active packet connections and perform the poll
    * action.
    */
@@ -768,6 +771,7 @@ int devif_poll(FAR struct net_driver_s *dev, devif_poll_callback_t callback)
       /* Nothing more to do */
     }
 
+  netdev_poll_guard_exit(dev);
   return bstop;
 }
 

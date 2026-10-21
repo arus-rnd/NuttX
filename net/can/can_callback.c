@@ -30,6 +30,7 @@
 
 #include <nuttx/net/netconfig.h>
 #include <nuttx/net/netdev.h>
+#include <nuttx/net/netdev_pollguard.h>
 #include <nuttx/mm/iob.h>
 
 #include "devif/devif.h"
@@ -125,6 +126,7 @@ uint16_t can_callback(FAR struct net_driver_s *dev,
 
       if (conn->sconn.s_timestamp)
         {
+	  NET_DEBUGASSERT(dev->d_appdata != NULL);
           struct timespec *ts = (struct timespec *)
                                                 &dev->d_appdata[dev->d_len];
           struct timeval *tv = (struct timeval *)

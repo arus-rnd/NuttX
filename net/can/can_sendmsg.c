@@ -38,6 +38,7 @@
 
 #include <nuttx/semaphore.h>
 #include <nuttx/net/netdev.h>
+#include <nuttx/net/netdev_pollguard.h>
 #include <nuttx/net/net.h>
 #include <nuttx/net/ip.h>
 
@@ -112,6 +113,7 @@ static uint16_t psock_send_eventhandler(FAR struct net_driver_s *dev,
           pstate->snd_sent = pstate->snd_buflen;
           if (pstate->pr_msglen > 0) /* concat cmsg data after packet */
             {
+	      NET_DEBUGASSERT(dev->d_buf != NULL);
               memcpy(dev->d_buf + pstate->snd_buflen, pstate->pr_msgbuf,
                       pstate->pr_msglen);
               dev->d_sndlen = pstate->snd_buflen + pstate->pr_msglen;

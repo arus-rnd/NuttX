@@ -23,6 +23,10 @@
 NET_CSRCS += devif_initialize.c devif_send.c devif_poll.c devif_callback.c
 NET_CSRCS += devif_loopback.c
 
+ifeq ($(CONFIG_DEBUG_NET_POLL_OVERLAP),y)
+NET_CSRCS += devif_pollguard.c
+endif
+
 # Device driver IP packet receipt interfaces
 
 ifeq ($(CONFIG_NET_IPv4),y)

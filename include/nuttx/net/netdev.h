@@ -403,6 +403,16 @@ struct net_driver_s
   /* Drivers may attached device-specific, private information */
 
   FAR void *d_private;
+
+#ifdef CONFIG_DEBUG_NET_POLL_OVERLAP
+  /* Poll-overlap detector state, see nuttx/net/netdev_pollguard.h */
+
+  volatile uint8_t d_pollnest;  /* Nesting depth of guarded sections */
+  int16_t d_pollowner;          /* pid of the task that entered first */
+  uint8_t d_pollownerprio;      /* Its priority at entry */
+  uint8_t d_pollownerbasepri;   /* BASEPRI at entry */
+  FAR const char *d_pollownertag; /* Which section it entered */
+#endif
 };
 
 typedef CODE int (*devif_poll_callback_t)(FAR struct net_driver_s *dev);

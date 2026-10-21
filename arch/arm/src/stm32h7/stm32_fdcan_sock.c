@@ -40,6 +40,7 @@
 #include <nuttx/wqueue.h>
 #include <nuttx/signal.h>
 #include <nuttx/net/netdev.h>
+#include <nuttx/net/netdev_pollguard.h>
 #include <nuttx/net/can.h>
 #include <netpacket/can.h>
 
@@ -1113,6 +1114,10 @@ static void fdcan_receive_work(void *arg)
 
       rf = &priv->rx[index];
 
+      /* From here until d_buf is restored below, RX owns dev.d_buf/d_len */
+
+      netdev_poll_guard_enter(&priv->dev, "fdcan_receive_work");
+
       /* Read the frame contents */
 
 #ifdef CONFIG_NET_CAN_CANFD
@@ -1208,6 +1213,8 @@ static void fdcan_receive_work(void *arg)
        */
 
       priv->dev.d_buf = priv->tx_pool;
+
+      netdev_poll_guard_exit(&priv->dev);
     }
 
   /* Check for errors and abort-transmission requests */

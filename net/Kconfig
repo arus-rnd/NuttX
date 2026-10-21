@@ -326,6 +326,27 @@ config NET_ALLOC_CONNS
 		pre-allocate connection list and all connection instances will be dynamically
 		allocated from heap at run time.
 
+config DEBUG_NET_POLL_OVERLAP
+	bool "Detect overlapping device poll / RX processing (debug)"
+	default n
+	---help---
+		Debug aid. Keeps a per-device nesting counter that is incremented
+		on entry to devif_poll() (and to driver RX sections that call
+		netdev_poll_guard_enter()) and decremented on exit. If a second,
+		different task enters while the counter is non-zero, the overlap
+		is counted and the first few are recorded (task name, pid,
+		priority and BASEPRI of both tasks). Read them with
+		netdev_poll_guard_get(). Not for flight builds.
+
+config DEBUG_NET_ASSERTIONS
+	bool "Enable NET_DEBUGASSERT() in the network stack (debug)"
+	default n
+	---help---
+		Enables the NET_DEBUGASSERT() macro from nuttx/net/netdev_pollguard.h.
+		Unlike DEBUGASSERT(), it does not depend on DEBUG_FEATURES /
+		DEBUG_ASSERTIONS, so it can be enabled without turning on every
+		assertion in NuttX. Not for flight builds.
+
 source "net/socket/Kconfig"
 source "net/inet/Kconfig"
 source "net/pkt/Kconfig"

@@ -32,8 +32,8 @@
 #include <nuttx/net/netconfig.h>
 #include <nuttx/net/netdev.h>
 
-#include "devif/devif.h"
 #include "can/can.h"
+#include "devif/devif.h"
 
 /****************************************************************************
  * Public Functions
@@ -60,15 +60,22 @@
  *
  ****************************************************************************/
 
-void can_poll(FAR struct net_driver_s *dev, FAR struct can_conn_s *conn)
-{
+void can_poll(FAR struct net_driver_s *dev, FAR struct can_conn_s *conn) {
   DEBUGASSERT(dev != NULL && conn != NULL && dev == conn->dev);
 
   /* Setup for the application callback */
 
+  up_udelay(50);
   dev->d_appdata = &dev->d_buf[NET_LL_HDRLEN(dev)];
-  dev->d_len     = 0;
-  dev->d_sndlen  = 0;
+  dev->d_len = 0;
+  dev->d_sndlen = 0;
+
+  //! Preempted here
+  // arp_poll
+  //    dev->d_appdata = NULL;
+  //	dev->d_len     = 0;
+  //	dev->d_sndlen  = 0;
+  //!
 
   /* Perform the application callback */
 
@@ -76,10 +83,9 @@ void can_poll(FAR struct net_driver_s *dev, FAR struct can_conn_s *conn)
 
   /* Check if the application has data to send */
 
-  if (dev->d_sndlen > 0)
-    {
-      return;
-    }
+  if (dev->d_sndlen > 0) {
+    return;
+  }
 
   /* Make sure that d_len is zero meaning that there is nothing to be sent */
 
