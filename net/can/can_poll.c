@@ -64,11 +64,12 @@ void can_poll(FAR struct net_driver_s *dev, FAR struct can_conn_s *conn) {
   DEBUGASSERT(dev != NULL && conn != NULL && dev == conn->dev);
 
   /* Setup for the application callback */
-
-  up_udelay(50);
   dev->d_appdata = &dev->d_buf[NET_LL_HDRLEN(dev)];
   dev->d_len = 0;
   dev->d_sndlen = 0;
+
+  // Try and get preempted here to simulate the race condition
+  up_udelay(50);
 
   //! Preempted here
   // arp_poll

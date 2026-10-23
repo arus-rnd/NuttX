@@ -25,16 +25,16 @@
 #include <nuttx/config.h>
 #if defined(CONFIG_NET) && defined(CONFIG_NET_CAN)
 
-#include <stdint.h>
 #include <debug.h>
+#include <stdint.h>
 
+#include <nuttx/mm/iob.h>
 #include <nuttx/net/netconfig.h>
 #include <nuttx/net/netdev.h>
 #include <nuttx/net/netdev_pollguard.h>
-#include <nuttx/mm/iob.h>
 
-#include "devif/devif.h"
 #include "can/can.h"
+#include "devif/devif.h"
 
 #ifdef CONFIG_NET_TIMESTAMP
 #include <sys/time.h>
@@ -58,10 +58,9 @@
  *
  ****************************************************************************/
 
-static inline uint16_t
-can_data_event(FAR struct net_driver_s *dev, FAR struct can_conn_s *conn,
-               uint16_t flags)
-{
+static inline uint16_t can_data_event(FAR struct net_driver_s *dev,
+                                      FAR struct can_conn_s *conn,
+                                      uint16_t flags) {
   uint16_t ret;
   FAR uint8_t *buffer = dev->d_appdata;
   int buflen = dev->d_len;
@@ -74,21 +73,20 @@ can_data_event(FAR struct net_driver_s *dev, FAR struct can_conn_s *conn,
    */
 
   recvlen = can_datahandler(conn, buffer, buflen);
-  if (recvlen < buflen)
-    {
-      /* There is no handler to receive new data and there are no free
-       * read-ahead buffers to retain the data -- drop the packet.
-       */
+  if (recvlen < buflen) {
+    /* There is no handler to receive new data and there are no free
+     * read-ahead buffers to retain the data -- drop the packet.
+     */
 
-      ninfo("Dropped %d bytes\n", dev->d_len);
+    ninfo("Dropped %d bytes\n", dev->d_len);
 
 #ifdef CONFIG_NET_STATISTICS
-      /* No support CAN net statistics yet */
+    /* No support CAN net statistics yet */
 
-      /* g_netstats.tcp.drop++; */
+    /* g_netstats.tcp.drop++; */
 
 #endif
-    }
+  }
 
   /* In any event, the new data has now been handled */
 
@@ -114,48 +112,41 @@ can_data_event(FAR struct net_driver_s *dev, FAR struct can_conn_s *conn,
  *
  ****************************************************************************/
 
-uint16_t can_callback(FAR struct net_driver_s *dev,
-                      FAR struct can_conn_s *conn, uint16_t flags)
-{
+uint16_t can_callback(FAR struct net_driver_s *dev, FAR struct can_conn_s *conn,
+                      uint16_t flags) {
   /* Some sanity checking */
 
-  if (conn)
-    {
+  if (conn) {
 #ifdef CONFIG_NET_TIMESTAMP
-      /* TIMESTAMP sockopt is activated, create timestamp and copy to iob */
+    /* TIMESTAMP sockopt is activated, create timestamp and copy to iob */
 
-      if (conn->sconn.s_timestamp)
-        {
-	  NET_DEBUGASSERT(dev->d_appdata != NULL);
-          struct timespec *ts = (struct timespec *)
-                                                &dev->d_appdata[dev->d_len];
-          struct timeval *tv = (struct timeval *)
-                                                &dev->d_appdata[dev->d_len];
-          dev->d_len += sizeof(struct timeval);
-          clock_systime_timespec(ts);
-          tv->tv_usec = ts->tv_nsec / 1000;
-        }
+    if (conn->sconn.s_timestamp && dev->d_appdata != NULL) {
+      NET_DEBUGASSERT(dev->d_appdata != NULL);
+      struct timespec *ts = (struct timespec *)&dev->d_appdata[dev->d_len];
+      struct timeval *tv = (struct timeval *)&dev->d_appdata[dev->d_len];
+      dev->d_len += sizeof(struct timeval);
+      clock_systime_timespec(ts);
+      tv->tv_usec = ts->tv_nsec / 1000;
+    }
 #endif
 
-      /* Try to lock the network when successful send data to the listener */
+    /* Try to lock the network when successful send data to the listener */
 
-      if (net_trylock() == OK)
-        {
-          flags = devif_conn_event(dev, conn, flags, conn->sconn.list);
-          net_unlock();
-        }
-
-      /* Either we did not get the lock or there is no application listening
-       * If we did not get a lock we store the frame in the read-ahead buffer
-       */
-
-      if ((flags & CAN_NEWDATA) != 0)
-        {
-          /* Data was not handled.. dispose of it appropriately */
-
-          flags = can_data_event(dev, conn, flags);
-        }
+    if (net_trylock() == OK) {
+      flags = devif_conn_event(dev, conn, flags, conn->sconn.list);
+      net_unlock();
     }
+
+    /* Either we did not get the lock or there is no application listening
+     * If we did not get a lock we store the frame in the read-ahead buffer
+     */
+
+    if ((flags & CAN_NEWDATA) != 0) {
+      /* Data was not handled.. dispose of it appropriately */
+
+      flags = can_data_event(dev, conn, flags);
+    }
+  }
 
   return flags;
 }
@@ -187,8 +178,7 @@ uint16_t can_callback(FAR struct net_driver_s *dev,
  ****************************************************************************/
 
 uint16_t can_datahandler(FAR struct can_conn_s *conn, FAR uint8_t *buffer,
-                         uint16_t buflen)
-{
+                         uint16_t buflen) {
   FAR struct iob_s *iob;
   int ret;
 
@@ -198,38 +188,34 @@ uint16_t can_datahandler(FAR struct can_conn_s *conn, FAR uint8_t *buffer,
    */
 
   iob = iob_tryalloc(true, IOBUSER_NET_CAN_READAHEAD);
-  if (iob == NULL)
-    {
-      nerr("ERROR: Failed to create new I/O buffer chain\n");
-      return 0;
-    }
+  if (iob == NULL) {
+    nerr("ERROR: Failed to create new I/O buffer chain\n");
+    return 0;
+  }
 
   /* Copy the new appdata into the I/O buffer chain (without waiting) */
 
-  ret = iob_trycopyin(iob, buffer, buflen, 0, true,
-                      IOBUSER_NET_CAN_READAHEAD);
-  if (ret < 0)
-    {
-      /* On a failure, iob_copyin return a negated error value but does
-       * not free any I/O buffers.
-       */
+  ret = iob_trycopyin(iob, buffer, buflen, 0, true, IOBUSER_NET_CAN_READAHEAD);
+  if (ret < 0) {
+    /* On a failure, iob_copyin return a negated error value but does
+     * not free any I/O buffers.
+     */
 
-      nerr("ERROR: Failed to add data to the I/O buffer chain: %d\n", ret);
-      iob_free_chain(iob, IOBUSER_NET_CAN_READAHEAD);
-      return 0;
-    }
+    nerr("ERROR: Failed to add data to the I/O buffer chain: %d\n", ret);
+    iob_free_chain(iob, IOBUSER_NET_CAN_READAHEAD);
+    return 0;
+  }
 
   /* Add the new I/O buffer chain to the tail of the read-ahead queue (again
    * without waiting).
    */
 
   ret = iob_tryadd_queue(iob, &conn->readahead);
-  if (ret < 0)
-    {
-      nerr("ERROR: Failed to queue the I/O buffer chain: %d\n", ret);
-      iob_free_chain(iob, IOBUSER_NET_CAN_READAHEAD);
-      return 0;
-    }
+  if (ret < 0) {
+    nerr("ERROR: Failed to queue the I/O buffer chain: %d\n", ret);
+    iob_free_chain(iob, IOBUSER_NET_CAN_READAHEAD);
+    return 0;
+  }
 
 #ifdef CONFIG_NET_CAN_NOTIFIER
   /* Provide notification(s) that additional CAN read-ahead data is

@@ -37,6 +37,7 @@
 #include <nuttx/sched.h>
 #include <nuttx/mm/iob.h>
 #include <nuttx/net/net.h>
+#include <nuttx/net/netdev_pollguard.h>
 
 #include "utils/utils.h"
 
@@ -505,5 +506,23 @@ FAR struct iob_s *net_iobtimedalloc(bool throttled, unsigned int timeout,
 FAR struct iob_s *net_ioballoc(bool throttled, enum iob_user_e consumerid)
 {
   return net_iobtimedalloc(throttled, UINT_MAX, consumerid);
+}
+#endif
+
+#ifdef CONFIG_DEBUG_NET_POLL_OVERLAP
+/****************************************************************************
+ * Name: net_lock_debug
+ *
+ * Description:
+ *   Debug accessor for the poll-overlap detector: returns the network lock
+ *   semaphore and the recursive owner/count kept by net_lock().
+ *
+ ****************************************************************************/
+
+FAR sem_t *net_lock_debug(FAR pid_t *holder, FAR unsigned int *count)
+{
+  *holder = g_holder;
+  *count  = g_count;
+  return &g_netlock;
 }
 #endif
