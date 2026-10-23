@@ -1116,6 +1116,7 @@ static void fdcan_receive_work(void *arg)
 
       /* From here until d_buf is restored below, RX owns dev.d_buf/d_len */
 
+      net_lock();
       netdev_poll_guard_enter(&priv->dev, "fdcan_receive_work");
 
       /* Read the frame contents */
@@ -1215,6 +1216,7 @@ static void fdcan_receive_work(void *arg)
       priv->dev.d_buf = priv->tx_pool;
 
       netdev_poll_guard_exit(&priv->dev);
+      net_unlock();
     }
 
   /* Check for errors and abort-transmission requests */
@@ -1326,7 +1328,9 @@ static void fdcan_txdone_work(void *arg)
    * Poll the network for new data to transmit
    */
 
+  net_lock();
   devif_poll(&priv->dev, fdcan_txpoll);
+  net_unlock();
 
   leave_critical_section(flags);
 }

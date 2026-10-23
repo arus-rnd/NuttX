@@ -120,7 +120,7 @@ uint16_t can_callback(FAR struct net_driver_s *dev, FAR struct can_conn_s *conn,
 #ifdef CONFIG_NET_TIMESTAMP
     /* TIMESTAMP sockopt is activated, create timestamp and copy to iob */
 
-    if (conn->sconn.s_timestamp && dev->d_appdata != NULL) {
+    if (conn->sconn.s_timestamp) {
       NET_DEBUGASSERT(dev->d_appdata != NULL);
       struct timespec *ts = (struct timespec *)&dev->d_appdata[dev->d_len];
       struct timeval *tv = (struct timeval *)&dev->d_appdata[dev->d_len];

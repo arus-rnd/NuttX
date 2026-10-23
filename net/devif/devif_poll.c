@@ -615,9 +615,7 @@ int devif_poll(FAR struct net_driver_s *dev, devif_poll_callback_t callback) {
 
 #ifdef CONFIG_NET_ARP_SEND
   /* Check for pending ARP requests */
-  if (dev->d_lltype == NET_LL_ETHERNET || dev->d_lltype == NET_LL_IEEE80211) {
     bstop = arp_poll(dev, callback);
-  }
 
   if (!bstop)
 #endif
