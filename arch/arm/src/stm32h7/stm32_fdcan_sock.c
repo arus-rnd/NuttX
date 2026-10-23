@@ -1319,7 +1319,9 @@ static void fdcan_txdone_work(void *arg)
    * Poll the network for new data to transmit
    */
 
+  net_lock();
   devif_poll(&priv->dev, fdcan_txpoll);
+  net_unlock();
 
   leave_critical_section(flags);
 }
